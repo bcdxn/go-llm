@@ -38,6 +38,23 @@ func New() *cli.App {
 					},
 				},
 			},
+			{
+				Name:  "chat",
+				Usage: "Start an interactive session with a model",
+				Action: func(*cli.Context) error {
+					_, err := chat.Run()
+					return err
+				},
+			},
+			{
+				Name:    "message",
+				Aliases: []string{"msg"},
+				Usage:   "Send a message in-line to a model",
+				Action: func(*cli.Context) error {
+					fmt.Println("comming soon...")
+					return nil
+				},
+			},
 		},
 	}
 }
