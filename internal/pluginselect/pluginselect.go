@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	tealogger "github.com/bcdxn/go-llm/internal"
+	"github.com/bcdxn/go-llm/internal/config"
 	"github.com/bcdxn/go-llm/internal/plugins"
 	"github.com/bcdxn/go-llm/internal/styles"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/urfave/cli/v2"
 )
 
 var (
@@ -29,6 +31,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return keyMsgHandler(m, msg)
 	case tea.WindowSizeMsg:
 		return windowSizeMsgHandler(m, msg)
+	case updateConfigMsg:
+		return updateConfigMsgHandler(m)
 	default:
 		var cmd tea.Cmd
 		return m, cmd
@@ -39,11 +43,11 @@ func (m model) View() string {
 	return "\n" + m.list.View()
 }
 
-func Run() (tea.Model, error) {
-	return tea.NewProgram(getInitialModel(), tea.WithAltScreen()).Run()
+func Run(ctx *cli.Context) (tea.Model, error) {
+	return tea.NewProgram(getInitialModel(ctx), tea.WithAltScreen()).Run()
 }
 
-func getInitialModel() model {
+func getInitialModel(ctx *cli.Context) model {
 	ps, err := plugins.Find()
 	if err != nil {
 		logger.LogFatal(err)
@@ -56,13 +60,19 @@ func getInitialModel() model {
 	}
 
 	l := list.New(items, itemDelegate{}, 40, 10)
-	l.Title = "Select a plugin to use"
+	l.Title = "Select a plugin to use:"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
+
+	cfg, ok := ctx.Context.Value(config.CtxConfig{}).(config.Config)
+	if !ok {
+		cfg = config.Config{}
+	}
 
 	return model{
 		plugins: ps,
 		list:    l,
+		cfg:     cfg,
 	}
 }
 

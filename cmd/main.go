@@ -4,11 +4,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/bcdxn/go-llm/internal/cli"
+	"github.com/bcdxn/go-llm/internal/app"
 )
 
 func main() {
-	app := cli.New()
+	app := app.New()
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)

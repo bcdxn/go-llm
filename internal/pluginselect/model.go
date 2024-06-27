@@ -1,6 +1,7 @@
 package pluginselect
 
 import (
+	"github.com/bcdxn/go-llm/internal/config"
 	"github.com/bcdxn/go-llm/internal/plugins"
 	"github.com/charmbracelet/bubbles/list"
 )
@@ -9,7 +10,8 @@ import (
 type model struct {
 	plugins  []plugins.PluginListItem
 	list     list.Model
-	selected string
+	selected plugins.PluginListItem
 	width    int // window width
 	height   int // window height
+	cfg      config.Config
 }

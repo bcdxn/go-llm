@@ -1,9 +1,11 @@
-package cli
+package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/bcdxn/go-llm/internal/chat"
+	"github.com/bcdxn/go-llm/internal/config"
 	"github.com/bcdxn/go-llm/internal/pluginselect"
 	"github.com/urfave/cli/v2"
 )
@@ -13,6 +15,15 @@ func New() *cli.App {
 		Version: "1.0.0-rc1",
 		Name:    "llm",
 		Usage:   "Start an interactive session",
+		Before: func(c *cli.Context) error {
+			cfg, err := config.Init()
+			if err != nil {
+				return err
+			}
+
+			c.Context = context.WithValue(c.Context, config.CtxConfig{}, cfg)
+			return nil
+		},
 		Action: func(*cli.Context) error {
 			_, err := chat.Run()
 			return err
@@ -31,8 +42,8 @@ func New() *cli.App {
 					{
 						Name:  "select",
 						Usage: "Select a plugin from a list of your installed plugins",
-						Action: func(*cli.Context) error {
-							_, err := pluginselect.Run()
+						Action: func(ctx *cli.Context) error {
+							_, err := pluginselect.Run(ctx)
 							return err
 						},
 					},
