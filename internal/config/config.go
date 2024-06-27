@@ -11,8 +11,8 @@ import (
 )
 
 type Config struct {
-	SelectedPlugin plugins.PluginListItem `yaml:"selectedPlugin",omitempty`
-	SelectedModel  string                 `yaml:"selectedModel",omitempty`
+	SelectedPlugin plugins.PluginListItem `yaml:"selectedPlugin"`
+	SelectedModel  string                 `yaml:"selectedModel"`
 	Log            LogConfig              `yaml:"log"`
 }
 
