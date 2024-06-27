@@ -6,6 +6,7 @@ import (
 
 	"github.com/bcdxn/go-llm/internal/chat"
 	"github.com/bcdxn/go-llm/internal/config"
+	"github.com/bcdxn/go-llm/internal/modelselect"
 	"github.com/bcdxn/go-llm/internal/pluginselect"
 	"github.com/urfave/cli/v2"
 )
@@ -44,6 +45,27 @@ func New() *cli.App {
 						Usage: "Select a plugin from a list of your installed plugins",
 						Action: func(ctx *cli.Context) error {
 							_, err := pluginselect.Run(ctx)
+							return err
+						},
+					},
+				},
+			},
+			{
+				Name: "models",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "list",
+						Usage: "List the models supported by the selected plugin",
+						Action: func(ctx *cli.Context) error {
+							fmt.Println("coming soon...")
+							return nil
+						},
+					},
+					{
+						Name:  "select",
+						Usage: "Select a model to use",
+						Action: func(ctx *cli.Context) error {
+							_, err := modelselect.Run(ctx)
 							return err
 						},
 					},

@@ -21,6 +21,10 @@ var (
 	selectedItemStyle = styles.Accent.PaddingLeft(2)
 )
 
+func Run(ctx *cli.Context) (tea.Model, error) {
+	return tea.NewProgram(getInitialModel(ctx), tea.WithAltScreen()).Run()
+}
+
 func (m model) Init() tea.Cmd {
 	return nil
 }
@@ -41,10 +45,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	return "\n" + m.list.View()
-}
-
-func Run(ctx *cli.Context) (tea.Model, error) {
-	return tea.NewProgram(getInitialModel(ctx), tea.WithAltScreen()).Run()
 }
 
 func getInitialModel(ctx *cli.Context) model {
