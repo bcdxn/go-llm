@@ -1,32 +1,16 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"os"
 
-	"github.com/bcdxn/go-llm/internal/plugins"
+	"github.com/bcdxn/go-llm/internal/cli"
 )
 
-// import (
-// 	"log"
-// 	"os"
-
-// 	"github.com/bcdxn/go-llm/internal/cli"
-// )
-
 func main() {
-	fs, _ := plugins.Find()
+	app := cli.New()
 
-	for _, f := range fs {
-		_, err := plugins.Load(f)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("calling F")
-		// p.F()
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
 	}
-	// app := cli.New()
-
-	// if err := app.Run(os.Args); err != nil {
-	// 	log.Fatal(err)
-	// }
 }

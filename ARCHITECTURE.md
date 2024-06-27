@@ -26,8 +26,8 @@ subgraph models
     claude3opus([claude-3-opus-20240229])
 end
 
-CoreLlm -->|HTTP| OpenAI
-CoreLlm -->|HTTP| Anthropic
+CoreLlm -->|RPC| OpenAI
+CoreLlm -->|RPC| Anthropic
 
 OpenAI -->|HTTPS| GPT4o
 OpenAI -->|HTTPS| GPT35latest

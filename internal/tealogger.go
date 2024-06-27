@@ -30,6 +30,18 @@ func New(debug bool) TeaLogger {
 	return tl
 }
 
+func (t TeaLogger) LogFatal(err error, msgs ...string) {
+	f, logerr := tea.LogToFile(errFile, "error")
+	if logerr != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		f.WriteString(fmt.Sprintf("%serror - %s\n", strings.Join(msgs, " "), err.Error()))
+	}
+	defer f.Close()
+	os.Exit(1)
+}
+
 func (t TeaLogger) LogErr(err error, msgs ...string) {
 	f, logerr := tea.LogToFile(errFile, "error")
 	if logerr != nil {

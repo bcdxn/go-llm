@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"plugin"
 
 	"github.com/bcdxn/go-llm/internal/chat"
+	"github.com/bcdxn/go-llm/internal/pluginselect"
 	"github.com/urfave/cli/v2"
 )
 
@@ -19,22 +19,21 @@ func New() *cli.App {
 		},
 		Commands: []*cli.Command{
 			{
-				Name: "list",
+				Name: "plugins",
 				Subcommands: []*cli.Command{
 					{
-						Name:  "plugins",
+						Name:  "list",
 						Usage: "List the installed plugins",
-						Action: func(*cli.Context) error {
-							fmt.Println("coming soon...")
-							return nil
+						Action: func(ctx *cli.Context) error {
+							return pluginsList(ctx)
 						},
 					},
 					{
-						Name:  "models",
-						Usage: "List the installed plugins",
+						Name:  "select",
+						Usage: "Select a plugin from a list of your installed plugins",
 						Action: func(*cli.Context) error {
-							fmt.Println("coming soon...")
-							return nil
+							_, err := pluginselect.Run()
+							return err
 						},
 					},
 				},
@@ -53,32 +52,6 @@ func New() *cli.App {
 				Usage:   "Send a message in-line to a model",
 				Action: func(*cli.Context) error {
 					fmt.Println("comming soon...")
-					return nil
-				},
-			},
-			{
-				Name:  "lp",
-				Usage: "load plugin test",
-				Action: func(*cli.Context) error {
-					p, err := plugin.Open("/Users/bdxn/Documents/2024-interview-prep/projects/go-llm-plugin-openai/go-llm-plugin-openai.so")
-					if err != nil {
-						fmt.Println("something bad happened loading the plugin...")
-						fmt.Println(err)
-						panic(err)
-					}
-
-					v, err := p.Lookup("V")
-					if err != nil {
-						panic(err)
-					}
-					f, err := p.Lookup("F")
-					if err != nil {
-						panic(err)
-					}
-
-					*v.(*int) = 7
-					f.(func())()
-
 					return nil
 				},
 			},
