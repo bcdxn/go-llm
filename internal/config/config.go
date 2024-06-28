@@ -11,9 +11,9 @@ import (
 )
 
 type Config struct {
-	SelectedPlugin plugins.PluginListItem `yaml:"selectedPlugin"`
-	SelectedModel  string                 `yaml:"selectedModel"`
-	Log            LogConfig              `yaml:"log"`
+	DefaultPlugin plugins.PluginListItem `yaml:"defaultPlugin"`
+	DefaultModel  string                 `yaml:"defaultModel"`
+	Log           LogConfig              `yaml:"log"`
 }
 
 type LogConfig struct {
@@ -62,10 +62,9 @@ func Load() (Config, error) {
 	}
 
 	var finalCfg Config
-
 	err = mergo.Merge(&finalCfg, loadedCfg, mergo.WithOverride)
 
-	return cfg, nil
+	return finalCfg, err
 }
 
 // Save the configuration to file

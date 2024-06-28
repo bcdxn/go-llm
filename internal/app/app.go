@@ -31,7 +31,8 @@ func New() *cli.App {
 		},
 		Commands: []*cli.Command{
 			{
-				Name: "plugins",
+				Name:  "plugins",
+				Usage: "Collection of plugin management commands",
 				Subcommands: []*cli.Command{
 					{
 						Name:  "list",
@@ -51,7 +52,8 @@ func New() *cli.App {
 				},
 			},
 			{
-				Name: "models",
+				Name:  "models",
+				Usage: "Collection of model management commands",
 				Subcommands: []*cli.Command{
 					{
 						Name:  "list",
