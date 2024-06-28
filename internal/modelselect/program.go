@@ -74,7 +74,7 @@ func getInitialModel(ctx *cli.Context) model {
 	d.ShowDescription = false
 	d.SetSpacing(0)
 	l := list.New(items, d, 30, 10)
-	l.Title = fmt.Sprintf("Select a model to use from %s:", cfg.DefaultPlugin.Name)
+	l.Title = fmt.Sprintf("Select a model to use from the %s plugin:", cfg.DefaultPlugin.Name)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 

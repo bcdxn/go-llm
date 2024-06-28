@@ -35,5 +35,10 @@ You can install more plugins by running:
 	go install go-llm-plugin-<plugin-name>
 	`))
 
+	fmt.Println(noteStyle.Render(`
+You can select an installed plugin to use by running:
+	llm plugins select
+	`))
+
 	return nil
 }

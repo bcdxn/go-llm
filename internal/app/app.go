@@ -46,6 +46,17 @@ func New() *cli.App {
 						Usage: "Select a plugin from a list of your installed plugins",
 						Action: func(ctx *cli.Context) error {
 							_, err := pluginselect.Run(ctx)
+							if err != nil {
+								return err
+							}
+
+							cfg, err := config.Load()
+							ctx.Context = context.WithValue(ctx.Context, config.CtxConfig{}, cfg)
+							// if the model was reset we can go ahead and prompt the user
+							if cfg.DefaultModel == "" {
+								_, err = modelselect.Run(ctx)
+							}
+
 							return err
 						},
 					},
