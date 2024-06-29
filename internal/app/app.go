@@ -6,8 +6,10 @@ import (
 
 	"github.com/bcdxn/go-llm/internal/chat"
 	"github.com/bcdxn/go-llm/internal/config"
+	"github.com/bcdxn/go-llm/internal/logger"
 	"github.com/bcdxn/go-llm/internal/modelselect"
 	"github.com/bcdxn/go-llm/internal/pluginselect"
+	"github.com/hashicorp/go-hclog"
 	"github.com/urfave/cli/v2"
 )
 
@@ -16,13 +18,41 @@ func New() *cli.App {
 		Version: "1.0.0-rc1",
 		Name:    "llm",
 		Usage:   "Start an interactive session",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "loglevel",
+				Aliases: []string{"l"},
+				Value:   "info",
+				Usage:   "set the logging verbosity - on",
+			},
+		},
 		Before: func(c *cli.Context) error {
+			level := c.String("loglevel")
+
+			dir, err := config.ConfigDirPath()
+			if err != nil {
+				return err
+			}
+
+			l, err := logger.New(dir, hclog.LevelFromString(level))
+			if err != nil {
+				return err
+			}
+			l.Info("logger initialized", "level", level)
 			cfg, err := config.Init()
 			if err != nil {
 				return err
 			}
 
 			c.Context = context.WithValue(c.Context, config.CtxConfig{}, cfg)
+			c.Context = context.WithValue(c.Context, logger.CtxLogger{}, l)
+
+			return nil
+		},
+		After: func(c *cli.Context) error {
+			if l, ok := c.Context.Value(logger.CtxLogger{}).(*logger.Logger); ok {
+				l.Close()
+			}
 			return nil
 		},
 		Action: func(*cli.Context) error {

@@ -15,7 +15,7 @@ var (
 	noteStyle = lipgloss.NewStyle().Margin(0)
 )
 
-func pluginsList(*cli.Context) error {
+func pluginsList(c *cli.Context) error {
 	ps, err := plugins.Find()
 	if err != nil {
 		return err

@@ -4,7 +4,10 @@
 package pluginselect
 
 import (
+	"fmt"
+
 	"github.com/bcdxn/go-llm/internal/config"
+	"github.com/bcdxn/go-llm/internal/logger"
 	"github.com/bcdxn/go-llm/internal/plugins"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -23,6 +26,7 @@ func Run(ctx *cli.Context) (tea.Model, error) {
 ------------------------------------------------------------------------------------------------- */
 
 type model struct {
+	l            *logger.Logger
 	list         list.Model
 	prevSelected plugins.PluginListItem
 	selected     plugins.PluginListItem
@@ -35,10 +39,12 @@ type model struct {
 ------------------------------------------------------------------------------------------------- */
 
 func (m model) Init() tea.Cmd {
+	m.l.Debug("pluginselect Init")
 	return getPluginsCmd()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	m.l.Debug("message received", "msg", fmt.Sprintf("%T", msg))
 	switch msg := msg.(type) {
 	case getPluginsMsg:
 		return getPluginsHandler(m)
@@ -46,8 +52,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return keyMsgHandler(m, msg)
 	case tea.WindowSizeMsg:
 		return windowSizeMsgHandler(m, msg)
-	case updateConfigMsg:
-		return updateConfigMsgHandler(m)
+	case selectedMsg:
+		return selectedMsgHandler(m)
 	default:
 		var cmd tea.Cmd
 		return m, cmd
@@ -59,15 +65,20 @@ func (m model) View() string {
 }
 
 func getInitialModel(ctx *cli.Context) model {
+	l, ok := ctx.Context.Value(logger.CtxLogger{}).(*logger.Logger)
+	if !ok {
+		logger.SimpleLogFatal("unable to fetch logger from context")
+	}
+	ll := l.Named("pluginselect")
 	items := []list.Item{}
 
 	d := list.NewDefaultDelegate()
 	d.ShowDescription = false
 	d.SetSpacing(0)
-	l := list.New(items, d, 40, 10)
-	l.Title = "Select a plugin to use:"
-	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	list := list.New(items, d, 40, 10)
+	list.Title = "Select a plugin to use:"
+	list.SetShowStatusBar(false)
+	list.SetFilteringEnabled(false)
 
 	cfg, ok := ctx.Context.Value(config.CtxConfig{}).(config.Config)
 	if !ok {
@@ -75,8 +86,9 @@ func getInitialModel(ctx *cli.Context) model {
 	}
 
 	return model{
+		l:            ll,
 		prevSelected: cfg.DefaultPlugin,
-		list:         l,
+		list:         list,
 		cfg:          cfg,
 	}
 }
@@ -96,9 +108,9 @@ func getPluginsCmd() tea.Cmd {
 	}
 }
 
-func updateConfigCmd() tea.Cmd {
+func selectedCmd() tea.Cmd {
 	return func() tea.Msg {
-		return updateConfigMsg{}
+		return selectedMsg{}
 	}
 }
 
@@ -106,7 +118,9 @@ func updateConfigCmd() tea.Cmd {
 ------------------------------------------------------------------------------------------------- */
 
 func getPluginsHandler(m model) (model, tea.Cmd) {
+	m.l.Debug("plugins handler")
 	ps, _ := plugins.Find()
+	m.l.Debug("plugins", "plugins", ps)
 
 	items := []list.Item{}
 
@@ -121,6 +135,7 @@ func getPluginsHandler(m model) (model, tea.Cmd) {
 
 // Handle keystrokes to navigate the list or quit the app.
 func keyMsgHandler(m model, msg tea.KeyMsg) (model, tea.Cmd) {
+	m.l.Debug("keyMsgHandler", "key", msg.String())
 	switch keypress := msg.String(); keypress {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -129,7 +144,7 @@ func keyMsgHandler(m model, msg tea.KeyMsg) (model, tea.Cmd) {
 		if ok {
 			m.selected = plugins.PluginListItem(i)
 		}
-		return m, updateConfigCmd()
+		return m, selectedCmd()
 	}
 
 	var cmd tea.Cmd
@@ -139,6 +154,7 @@ func keyMsgHandler(m model, msg tea.KeyMsg) (model, tea.Cmd) {
 
 // Handle window resize events and update the size of the list accordingly.
 func windowSizeMsgHandler(m model, msg tea.WindowSizeMsg) (model, tea.Cmd) {
+	m.l.Debug("windowSizeMsgHandler", "width", msg.Width, "height", msg.Height)
 	h, v := lipgloss.NewStyle().GetFrameSize()
 	m.width = msg.Width - h
 	m.height = msg.Height - v
@@ -151,7 +167,8 @@ func windowSizeMsgHandler(m model, msg tea.WindowSizeMsg) (model, tea.Cmd) {
 
 // Handle configuration update events by writing the selected plugin from the list to the persistent
 // config file.
-func updateConfigMsgHandler(m model) (model, tea.Cmd) {
+func selectedMsgHandler(m model) (model, tea.Cmd) {
+	m.l.Debug("selectedMsgHandler", "selected", m.selected)
 	m.cfg.DefaultPlugin = plugins.PluginListItem(m.selected)
 	if m.cfg.DefaultPlugin.Path != m.prevSelected.Path {
 		m.cfg.DefaultModel = "" // reset the default model when plugin changes
@@ -164,4 +181,4 @@ func updateConfigMsgHandler(m model) (model, tea.Cmd) {
 ------------------------------------------------------------------------------------------------- */
 
 type getPluginsMsg struct{}
-type updateConfigMsg struct{}
+type selectedMsg struct{}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bcdxn/go-llm/internal/config"
+	"github.com/bcdxn/go-llm/internal/logger"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -21,6 +22,7 @@ func Run(ctx *cli.Context) (tea.Model, error) {
 ------------------------------------------------------------------------------------------------- */
 
 type model struct {
+	l        *logger.Logger
 	width    int // window width
 	height   int // window height
 	list     list.Model
@@ -36,11 +38,9 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	m.l.Debug("message received", "msg", fmt.Sprintf("%T", msg))
 	var cmds []tea.Cmd
 
-	f, _ := tea.LogToFile("test.log", "")
-	defer f.Close()
-	f.WriteString(fmt.Sprintf("wat: %T - %v\n", msg, msg))
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case fetchModelsMsg:
@@ -49,8 +49,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return keyMsgHandler(m, msg)
 	case tea.WindowSizeMsg:
 		return windowSizeMsgHandler(m, msg)
-	case updateConfigMsg:
-		return updateConfigMsgHandler(m)
+	case selectedMsg:
+		return selectedMsgHandler(m)
 	}
 
 	m.list, cmd = m.list.Update(msg)
@@ -63,6 +63,12 @@ func (m model) View() string {
 }
 
 func getInitialModel(ctx *cli.Context) model {
+	l, ok := ctx.Context.Value(logger.CtxLogger{}).(*logger.Logger)
+	if !ok {
+		logger.SimpleLogFatal("unable to fetch logger from context")
+	}
+	ll := l.Named("modelselect")
+
 	cfg, ok := ctx.Context.Value(config.CtxConfig{}).(config.Config)
 	if !ok {
 		cfg = config.Config{}
@@ -73,13 +79,14 @@ func getInitialModel(ctx *cli.Context) model {
 	d := list.NewDefaultDelegate()
 	d.ShowDescription = false
 	d.SetSpacing(0)
-	l := list.New(items, d, 30, 10)
-	l.Title = fmt.Sprintf("Select a model to use from the %s plugin:", cfg.DefaultPlugin.Name)
-	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	list := list.New(items, d, 30, 10)
+	list.Title = fmt.Sprintf("Select a model to use from the %s plugin:", cfg.DefaultPlugin.Name)
+	list.SetShowStatusBar(false)
+	list.SetFilteringEnabled(false)
 
 	return model{
-		list: l,
+		l:    ll,
+		list: list,
 		cfg:  cfg,
 	}
 }
@@ -99,9 +106,9 @@ func fetchModelsCmd() tea.Cmd {
 	}
 }
 
-func updateConfigCmd() tea.Cmd {
+func selectedCmd() tea.Cmd {
 	return func() tea.Msg {
-		return updateConfigMsg{}
+		return selectedMsg{}
 	}
 }
 
@@ -126,6 +133,7 @@ func fetchModelsHandler(m model) (model, tea.Cmd) {
 
 // Handle keystrokes to navigate the list or quit the app.
 func keyMsgHandler(m model, msg tea.KeyMsg) (model, tea.Cmd) {
+	m.l.Debug("keyMsgHandler", "key", msg.String())
 	switch keypress := msg.String(); keypress {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -134,7 +142,7 @@ func keyMsgHandler(m model, msg tea.KeyMsg) (model, tea.Cmd) {
 		if ok {
 			m.selected = string(i)
 		}
-		return m, updateConfigCmd()
+		return m, selectedCmd()
 	}
 
 	var cmd tea.Cmd
@@ -144,6 +152,7 @@ func keyMsgHandler(m model, msg tea.KeyMsg) (model, tea.Cmd) {
 
 // Handle window resize events and update the size of the list accordingly.
 func windowSizeMsgHandler(m model, msg tea.WindowSizeMsg) (model, tea.Cmd) {
+	m.l.Debug("windowSizeMsgHandler", "width", msg.Width, "height", msg.Height)
 	h, v := lipgloss.NewStyle().GetFrameSize()
 	m.width = msg.Width - h
 	m.height = msg.Height - v
@@ -156,7 +165,8 @@ func windowSizeMsgHandler(m model, msg tea.WindowSizeMsg) (model, tea.Cmd) {
 
 // Handle configuration update events by writing the selected model from the list to the persistent
 // config file.
-func updateConfigMsgHandler(m model) (model, tea.Cmd) {
+func selectedMsgHandler(m model) (model, tea.Cmd) {
+	m.l.Debug("selectedCmdMsgHandler", "selected", m.selected)
 	m.cfg.DefaultModel = m.selected
 	config.Persist(m.cfg)
 	return m, tea.Quit
@@ -165,5 +175,5 @@ func updateConfigMsgHandler(m model) (model, tea.Cmd) {
 /* Messages
 ------------------------------------------------------------------------------------------------- */
 
-type updateConfigMsg struct{}
+type selectedMsg struct{}
 type fetchModelsMsg struct{}
