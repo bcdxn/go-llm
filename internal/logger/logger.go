@@ -38,13 +38,13 @@ func New(dir string, level hclog.Level) (*Logger, error) {
 	stdout := hclog.New(&hclog.LoggerOptions{
 		Name:   "llm",
 		Output: stdoutFile,
-		Level:  hclog.Debug,
+		Level:  level,
 	})
 
 	stderr := hclog.New(&hclog.LoggerOptions{
 		Name:   "llm",
 		Output: stderrFile,
-		Level:  hclog.Debug,
+		Level:  level,
 	})
 
 	return &Logger{
@@ -65,6 +65,10 @@ func (l Logger) Named(name string) *Logger {
 		stderr:     l.stderr.Named(name),
 		stdout:     l.stdout.Named(name),
 	}
+}
+
+func (l Logger) GetLevel() hclog.Level {
+	return l.stdout.GetLevel()
 }
 
 func (l Logger) Log(level hclog.Level, msg string, args ...interface{}) {

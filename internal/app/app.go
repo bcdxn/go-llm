@@ -38,7 +38,7 @@ func New() *cli.App {
 			if err != nil {
 				return err
 			}
-			l.Info("logger initialized", "level", level)
+			l.Debug("logger initialized", "level", level, "l", l.GetLevel())
 			cfg, err := config.Init()
 			if err != nil {
 				return err
@@ -100,8 +100,7 @@ func New() *cli.App {
 						Name:  "list",
 						Usage: "List the models supported by the selected plugin",
 						Action: func(ctx *cli.Context) error {
-							fmt.Println("coming soon...")
-							return nil
+							return modelsList(ctx)
 						},
 					},
 					{
