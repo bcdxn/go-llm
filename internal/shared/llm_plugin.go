@@ -6,10 +6,16 @@ import (
 	"github.com/hashicorp/go-plugin"
 )
 
+/* LLM Plugin Interface
+--------------------------------------------------------------------------------------------------*/
+
 type LLM interface {
 	GetPluginProtocolVersion() string
 	GetModels() []string
 }
+
+/* LLMRPC
+--------------------------------------------------------------------------------------------------*/
 
 type LLMRPC struct {
 	client *rpc.Client
@@ -26,8 +32,8 @@ func (l *LLMRPC) GetPluginProtocolVersion() string {
 	return resp
 }
 
-func (l *LLMRPC) GetModels() string {
-	var resp string
+func (l *LLMRPC) GetModels() []string {
+	var resp []string
 	err := l.client.Call("Plugin.GetModels", new(interface{}), &resp)
 	if err != nil {
 		// TODO: return err
@@ -37,9 +43,25 @@ func (l *LLMRPC) GetModels() string {
 	return resp
 }
 
+/* LLMRPCServer
+--------------------------------------------------------------------------------------------------*/
+
 type LLMRPCServer struct {
 	Impl LLM
 }
+
+func (s *LLMRPCServer) GetPluginProtocolVersion(args interface{}, resp *string) error {
+	*resp = s.Impl.GetPluginProtocolVersion()
+	return nil
+}
+
+func (s *LLMRPCServer) GetModels(args interface{}, resp *[]string) error {
+	*resp = s.Impl.GetModels()
+	return nil
+}
+
+/* LLMPlugin
+--------------------------------------------------------------------------------------------------*/
 
 type LLMPlugin struct {
 	Impl LLM

@@ -68,6 +68,7 @@ func getInitialModel(c *cli.Context) model {
 		l     = llm.MustGetLoggerFromContext(c.Context, "pluginselect")
 		items = []list.Item{}
 		d     = list.NewDefaultDelegate()
+		cfg   = llm.MustGetConfigFromContext(c.Context)
 	)
 
 	d.ShowDescription = false
@@ -76,8 +77,6 @@ func getInitialModel(c *cli.Context) model {
 	list.Title = "Select a plugin to use:"
 	list.SetShowStatusBar(false)
 	list.SetFilteringEnabled(false)
-
-	cfg := llm.MustGetConfigFromContext(c.Context)
 
 	return model{
 		l:            l,

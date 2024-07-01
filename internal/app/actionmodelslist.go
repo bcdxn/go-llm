@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"log"
+	"os/exec"
 	"strings"
 
 	llm "github.com/bcdxn/go-llm/internal"
@@ -13,7 +14,7 @@ import (
 
 func modelsList(ctx *cli.Context) error {
 	var (
-		// cfg       = llm.MustGetConfigFromContext(ctx.Context)
+		cfg       = llm.MustGetConfigFromContext(ctx.Context)
 		l         = llm.MustGetLoggerFromContext(ctx.Context, "modelslist")
 		pluginMap = map[string]plugin.Plugin{
 			"llm": &shared.LLMPlugin{},
@@ -22,9 +23,9 @@ func modelsList(ctx *cli.Context) error {
 			HandshakeConfig: shared.DefaultHandshakeConfig,
 			Plugins:         pluginMap,
 			Logger:          l,
+			Cmd:             exec.Command(cfg.DefaultPlugin.Path),
 		})
 	)
-
 	defer client.Kill()
 
 	l.Trace("creating RPC Client")
@@ -32,6 +33,7 @@ func modelsList(ctx *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	l.Trace("successfully created RPC Client")
 	l.Trace("requesting Plugin from RPC Client")
 

@@ -2,11 +2,15 @@ package modelselect
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	llm "github.com/bcdxn/go-llm/internal"
+	"github.com/bcdxn/go-llm/internal/shared"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/hashicorp/go-plugin"
 	"github.com/urfave/cli/v2"
 )
 
@@ -62,14 +66,14 @@ func (m model) View() string {
 }
 
 func getInitialModel(c *cli.Context) model {
-	l := llm.MustGetLoggerFromContext(c.Context, "modelselect")
+	var (
+		l     = llm.MustGetLoggerFromContext(c.Context, "modelselect")
+		d     = list.NewDefaultDelegate()
+		items = []list.Item{}
+		cfg   = llm.MustGetConfigFromContext(c.Context)
+	)
 	defer l.Close()
 
-	cfg := llm.MustGetConfigFromContext(c.Context)
-
-	items := []list.Item{}
-
-	d := list.NewDefaultDelegate()
 	d.ShowDescription = false
 	d.SetSpacing(0)
 	list := list.New(items, d, 30, 10)
@@ -109,16 +113,43 @@ func selectedCmd() tea.Cmd {
 ------------------------------------------------------------------------------------------------- */
 
 func fetchModelsHandler(m model) (model, tea.Cmd) {
-	// todo: make plugin call to fetch models
-	models := []list.Item{
-		item("gpt-3.5-turbo-1106"),
-		item("gpt-3.5-turbo-16k"),
-		item("gpt-3.5-turbo-0125"),
-		item("gpt-3.5-turbo"),
-		item("gpt-3.5-turbo-instruct"),
-		item("gpt-3.5-turbo-instruct-0914"),
+	var (
+		pluginMap = map[string]plugin.Plugin{
+			"llm": &shared.LLMPlugin{},
+		}
+	)
+
+	client := plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig: shared.DefaultHandshakeConfig,
+		Plugins:         pluginMap,
+		Logger:          m.l,
+		Cmd:             exec.Command(m.cfg.DefaultPlugin.Path),
+	})
+	defer client.Kill()
+
+	rpcClient, err := client.Client()
+	if err != nil {
+		m.l.Error("error initializing RPC client", err)
+		os.Exit(1)
 	}
 
+	raw, err := rpcClient.Dispense("llm")
+	if err != nil {
+		m.l.Error("error initializing plugin", err)
+		os.Exit(1)
+	}
+
+	llm := raw.(shared.LLM)
+	ms := llm.GetModels()
+	m.l.Debug("successfully retrieved models", "models", ms)
+
+	models := []list.Item{}
+
+	for _, m := range ms {
+		models = append(models, item(m))
+	}
+
+	m.l.Trace("updating list model with models")
 	m.list.SetItems(models)
 
 	return m, nil
