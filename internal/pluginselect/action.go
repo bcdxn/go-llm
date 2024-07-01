@@ -1,34 +1,32 @@
 package pluginselect
 
 import (
-	"context"
-
-	"github.com/bcdxn/go-llm/internal/config"
+	llm "github.com/bcdxn/go-llm/internal"
 	"github.com/bcdxn/go-llm/internal/modelselect"
 	"github.com/urfave/cli/v2"
 )
 
-func Action(ctx *cli.Context) error {
-	_, err := Run(ctx)
+func Action(c *cli.Context) error {
+	_, err := Run(c)
 	if err != nil {
 		return err
 	}
 
-	cfg, err := config.Load()
+	cfg, err := llm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
 	// if the model was reset we can go ahead and prompt the user for the model
 	if cfg.DefaultModel == "" {
-		ctx.Context = context.WithValue(ctx.Context, config.CtxConfig{}, cfg)
-		_, err := modelselect.Run(ctx)
+		c.Context = llm.SetConfigInContext(c.Context, cfg)
+		_, err := modelselect.Run(c)
 		if err != nil {
 			return err
 		}
 	}
 
-	cfg, err = config.Load()
+	cfg, err = llm.LoadConfig()
 	if err != nil {
 		return err
 	}

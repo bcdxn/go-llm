@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bcdxn/go-llm/internal/logger"
+	llm "github.com/bcdxn/go-llm/internal"
 	"github.com/bcdxn/go-llm/internal/plugins"
 	"github.com/bcdxn/go-llm/internal/styles"
 	"github.com/charmbracelet/lipgloss"
@@ -16,19 +16,15 @@ var (
 	noteStyle = lipgloss.NewStyle().Margin(0)
 )
 
-func pluginsList(ctx *cli.Context) error {
-	l, ok := ctx.Context.Value(logger.CtxLogger{}).(*logger.Logger)
-	if !ok {
-		logger.SimpleLogFatal("unable to fetch logger from context")
-	}
-	ll := l.Named("pluginslist")
+func pluginsList(c *cli.Context) error {
+	l := llm.MustGetLoggerFromContext(c.Context, "pluginslist")
 
-	ll.Trace("finding plugis")
+	l.Debug("finding plugis")
 	ps, err := plugins.Find()
 	if err != nil {
 		return err
 	}
-	ll.Debug("foud plugins", "plugins", ps)
+	l.Debug("foud plugins", "plugins", ps)
 
 	fmt.Println(styles.Title.Render("Installed LLM Plugins:"))
 

@@ -3,8 +3,7 @@ package modelselect
 import (
 	"fmt"
 
-	"github.com/bcdxn/go-llm/internal/config"
-	"github.com/bcdxn/go-llm/internal/logger"
+	llm "github.com/bcdxn/go-llm/internal"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -22,11 +21,11 @@ func Run(ctx *cli.Context) (tea.Model, error) {
 ------------------------------------------------------------------------------------------------- */
 
 type model struct {
-	l        *logger.Logger
+	l        llm.Logger
 	width    int // window width
 	height   int // window height
 	list     list.Model
-	cfg      config.Config
+	cfg      llm.Config
 	selected string
 }
 
@@ -62,17 +61,11 @@ func (m model) View() string {
 	return "\n" + m.list.View()
 }
 
-func getInitialModel(ctx *cli.Context) model {
-	l, ok := ctx.Context.Value(logger.CtxLogger{}).(*logger.Logger)
-	if !ok {
-		logger.SimpleLogFatal("unable to fetch logger from context")
-	}
-	ll := l.Named("modelselect")
+func getInitialModel(c *cli.Context) model {
+	l := llm.MustGetLoggerFromContext(c.Context, "modelselect")
+	defer l.Close()
 
-	cfg, ok := ctx.Context.Value(config.CtxConfig{}).(config.Config)
-	if !ok {
-		cfg = config.Config{}
-	}
+	cfg := llm.MustGetConfigFromContext(c.Context)
 
 	items := []list.Item{}
 
@@ -85,7 +78,7 @@ func getInitialModel(ctx *cli.Context) model {
 	list.SetFilteringEnabled(false)
 
 	return model{
-		l:    ll,
+		l:    l,
 		list: list,
 		cfg:  cfg,
 	}
@@ -168,7 +161,7 @@ func windowSizeMsgHandler(m model, msg tea.WindowSizeMsg) (model, tea.Cmd) {
 func selectedMsgHandler(m model) (model, tea.Cmd) {
 	m.l.Debug("selectedCmdMsgHandler", "selected", m.selected)
 	m.cfg.DefaultModel = m.selected
-	config.Persist(m.cfg)
+	llm.PersistConfig(m.cfg)
 	return m, tea.Quit
 }
 

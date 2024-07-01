@@ -6,8 +6,7 @@ package pluginselect
 import (
 	"fmt"
 
-	"github.com/bcdxn/go-llm/internal/config"
-	"github.com/bcdxn/go-llm/internal/logger"
+	llm "github.com/bcdxn/go-llm/internal"
 	"github.com/bcdxn/go-llm/internal/plugins"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -18,21 +17,21 @@ import (
 /* Program Entry Point
 ------------------------------------------------------------------------------------------------- */
 
-func Run(ctx *cli.Context) (tea.Model, error) {
-	return tea.NewProgram(getInitialModel(ctx), tea.WithAltScreen()).Run()
+func Run(c *cli.Context) (tea.Model, error) {
+	return tea.NewProgram(getInitialModel(c), tea.WithAltScreen()).Run()
 }
 
 /* Model
 ------------------------------------------------------------------------------------------------- */
 
 type model struct {
-	l            *logger.Logger
+	l            llm.Logger
 	list         list.Model
 	prevSelected plugins.PluginListItem
 	selected     plugins.PluginListItem
 	width        int // window width
 	height       int // window height
-	cfg          config.Config
+	cfg          llm.Config
 }
 
 /* Component
@@ -64,15 +63,13 @@ func (m model) View() string {
 	return "\n" + m.list.View()
 }
 
-func getInitialModel(ctx *cli.Context) model {
-	l, ok := ctx.Context.Value(logger.CtxLogger{}).(*logger.Logger)
-	if !ok {
-		logger.SimpleLogFatal("unable to fetch logger from context")
-	}
-	ll := l.Named("pluginselect")
-	items := []list.Item{}
+func getInitialModel(c *cli.Context) model {
+	var (
+		l     = llm.MustGetLoggerFromContext(c.Context, "pluginselect")
+		items = []list.Item{}
+		d     = list.NewDefaultDelegate()
+	)
 
-	d := list.NewDefaultDelegate()
 	d.ShowDescription = false
 	d.SetSpacing(0)
 	list := list.New(items, d, 40, 10)
@@ -80,13 +77,10 @@ func getInitialModel(ctx *cli.Context) model {
 	list.SetShowStatusBar(false)
 	list.SetFilteringEnabled(false)
 
-	cfg, ok := ctx.Context.Value(config.CtxConfig{}).(config.Config)
-	if !ok {
-		cfg = config.Config{}
-	}
+	cfg := llm.MustGetConfigFromContext(c.Context)
 
 	return model{
-		l:            ll,
+		l:            l,
 		prevSelected: cfg.DefaultPlugin,
 		list:         list,
 		cfg:          cfg,
@@ -173,7 +167,7 @@ func selectedMsgHandler(m model) (model, tea.Cmd) {
 	if m.cfg.DefaultPlugin.Path != m.prevSelected.Path {
 		m.cfg.DefaultModel = "" // reset the default model when plugin changes
 	}
-	config.Persist(m.cfg)
+	llm.PersistConfig(m.cfg)
 	return m, tea.Quit
 }
 

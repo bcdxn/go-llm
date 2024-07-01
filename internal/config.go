@@ -1,6 +1,7 @@
-package config
+package llm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,23 +22,34 @@ type LogConfig struct {
 	File  string `yaml:"file"`
 }
 
-type CtxConfig struct{}
+func MustGetConfigFromContext(c context.Context) Config {
+	cfg, ok := c.Value(ctxConfig{}).(Config)
+	if !ok {
+		SimpleLogFatal("unable to fetch config from context")
+	}
+
+	return cfg
+}
+
+func SetConfigInContext(c context.Context, cfg Config) context.Context {
+	return context.WithValue(c, ctxConfig{}, cfg)
+}
 
 // Init creates the config file if it does not already exist and saves it and also returns the
 // unmarshalled configuration (default if no config file was found)
-func Init() (Config, error) {
+func InitConfig() (Config, error) {
 	var cfg Config
-	cfg, err := Load()
+	cfg, err := LoadConfig()
 	if err != nil {
 		return cfg, err
 	}
 
-	err = Persist(cfg)
+	err = PersistConfig(cfg)
 	return cfg, err
 }
 
 // Load initializes the config file if it doesn't exist and returns the unmarshalled config data.
-func Load() (Config, error) {
+func LoadConfig() (Config, error) {
 	var cfg Config
 	cfgPath, err := createConfigDirectory()
 	if err != nil {
@@ -68,7 +80,7 @@ func Load() (Config, error) {
 }
 
 // Save the configuration to file
-func Persist(cfg Config) error {
+func PersistConfig(cfg Config) error {
 	path, err := ConfigFilePath()
 	if err != nil {
 		return err
@@ -166,3 +178,5 @@ func closeConfigFile(f *os.File) {
 		panic(err)
 	}
 }
+
+type ctxConfig struct{}

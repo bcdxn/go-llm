@@ -1,12 +1,10 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
+	llm "github.com/bcdxn/go-llm/internal"
 	"github.com/bcdxn/go-llm/internal/chat"
-	"github.com/bcdxn/go-llm/internal/config"
-	"github.com/bcdxn/go-llm/internal/logger"
 	"github.com/bcdxn/go-llm/internal/modelselect"
 	"github.com/bcdxn/go-llm/internal/pluginselect"
 	"github.com/hashicorp/go-hclog"
@@ -29,30 +27,24 @@ func New() *cli.App {
 		Before: func(c *cli.Context) error {
 			level := c.String("loglevel")
 
-			dir, err := config.ConfigDirPath()
-			if err != nil {
-				return err
-			}
-
-			l, err := logger.New(dir, hclog.LevelFromString(level))
+			l, err := llm.NewLogger("llm", hclog.LevelFromString(level))
 			if err != nil {
 				return err
 			}
 			l.Debug("logger initialized", "level", level, "l", l.GetLevel())
-			cfg, err := config.Init()
+			cfg, err := llm.InitConfig()
 			if err != nil {
 				return err
 			}
 
-			c.Context = context.WithValue(c.Context, config.CtxConfig{}, cfg)
-			c.Context = context.WithValue(c.Context, logger.CtxLogger{}, l)
+			c.Context = llm.SetConfigInContext(c.Context, cfg)
+			c.Context = llm.SetLoggerInContext(c.Context, *l)
 
 			return nil
 		},
 		After: func(c *cli.Context) error {
-			if l, ok := c.Context.Value(logger.CtxLogger{}).(*logger.Logger); ok {
-				l.Close()
-			}
+			l := llm.MustGetLoggerFromContext(c.Context, "")
+			l.Close()
 			return nil
 		},
 		Action: func(*cli.Context) error {
@@ -80,8 +72,8 @@ func New() *cli.App {
 								return err
 							}
 
-							cfg, err := config.Load()
-							ctx.Context = context.WithValue(ctx.Context, config.CtxConfig{}, cfg)
+							cfg, err := llm.LoadConfig()
+							ctx.Context = llm.SetConfigInContext(ctx.Context, cfg)
 							// if the model was reset we can go ahead and prompt the user
 							if cfg.DefaultModel == "" {
 								_, err = modelselect.Run(ctx)
