@@ -8,6 +8,7 @@ import (
 
 	llm "github.com/bcdxn/go-llm/internal"
 	"github.com/bcdxn/go-llm/internal/plugins"
+	"github.com/bcdxn/go-llm/internal/shared"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -25,7 +26,7 @@ func Run(c *cli.Context) (tea.Model, error) {
 ------------------------------------------------------------------------------------------------- */
 
 type model struct {
-	l            llm.Logger
+	l            shared.Logger
 	list         list.Model
 	prevSelected plugins.PluginListItem
 	selected     plugins.PluginListItem
@@ -65,7 +66,7 @@ func (m model) View() string {
 
 func getInitialModel(c *cli.Context) model {
 	var (
-		l     = llm.MustGetLoggerFromContext(c.Context, "pluginselect")
+		l     = shared.MustGetLoggerFromContext(c.Context, "pluginselect")
 		items = []list.Item{}
 		d     = list.NewDefaultDelegate()
 		cfg   = llm.MustGetConfigFromContext(c.Context)

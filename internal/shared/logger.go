@@ -1,4 +1,4 @@
-package llm
+package shared
 
 import (
 	"context"
@@ -23,15 +23,10 @@ type Logger struct {
 
 func NewLogger(name string, level hclog.Level) (*Logger, error) {
 	var l *Logger
-	dir, err := GetLogDirPath()
+	stdoutFilename, stderrFilename, err := GetLogPaths()
 	if err != nil {
 		return l, err
 	}
-
-	d := time.Now().Format("2006-01-02")
-
-	stdoutFilename := filepath.Join(dir, fmt.Sprintf("./%s-stdout.log", d))
-	stderrFilename := filepath.Join(dir, fmt.Sprintf("./%s-stderr.log", d))
 
 	stdoutFile, err := tea.LogToFile(stdoutFilename, "")
 	if err != nil {
@@ -61,7 +56,6 @@ func NewLogger(name string, level hclog.Level) (*Logger, error) {
 		stderr,
 		stdout,
 	}, nil
-
 }
 
 func (l Logger) Log(level hclog.Level, msg string, args ...interface{}) {
@@ -198,13 +192,39 @@ func SimpleLogFatal(msg string, args ...interface{}) {
 
 // Get the absolute path to the folder where the log files live
 func GetLogDirPath() (string, error) {
-	var cfgPath string
+	var logPath string
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return cfgPath, fmt.Errorf("unable to get user home directory location: %w", err)
+		return logPath, fmt.Errorf("unable to get user home directory location: %w", err)
 	}
-	cfgPath = filepath.Join(home, ".llm")
-	return cfgPath, nil
+	logPath = filepath.Join(home, ".llm", "logs")
+
+	err = os.MkdirAll(logPath, os.ModePerm)
+	if err != nil {
+		return logPath, fmt.Errorf("unable to create %s directory: %w", logPath, err)
+	}
+
+	return logPath, nil
+}
+
+// Get the absolute path where the stdout and stderr log files live
+func GetLogPaths() (string, string, error) {
+	var (
+		stdoutFilename string
+		stderrFilename string
+	)
+
+	dir, err := GetLogDirPath()
+	if err != nil {
+		return stdoutFilename, stderrFilename, err
+	}
+
+	d := time.Now().Format("2006-01-02")
+
+	stdoutFilename = filepath.Join(dir, fmt.Sprintf("%s-stdout.log", d))
+	stderrFilename = filepath.Join(dir, fmt.Sprintf("%s-stderr.log", d))
+
+	return stdoutFilename, stderrFilename, nil
 }
 
 type ctxLogger struct{}

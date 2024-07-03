@@ -8,24 +8,26 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/bcdxn/go-llm/internal/plugins"
+	"github.com/bcdxn/go-llm/internal/shared"
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	DefaultPlugin plugins.PluginListItem `yaml:"defaultPlugin"`
-	DefaultModel  string                 `yaml:"defaultModel"`
-	Log           LogConfig              `yaml:"log"`
+	DefaultPlugin plugins.PluginListItem       `yaml:"defaultPlugin"`
+	DefaultModel  string                       `yaml:"defaultModel"`
+	Log           LogConfig                    `yaml:"log"`
+	Plugins       map[string]map[string]string `yaml:"plugins"`
 }
 
 type LogConfig struct {
 	Level string `yaml:"level"`
-	File  string `yaml:"file"`
+	Dir   string `yaml:"dir"`
 }
 
 func MustGetConfigFromContext(c context.Context) Config {
 	cfg, ok := c.Value(ctxConfig{}).(Config)
 	if !ok {
-		SimpleLogFatal("unable to fetch config from context")
+		shared.SimpleLogFatal("unable to fetch config from context")
 	}
 
 	return cfg
@@ -59,8 +61,9 @@ func LoadConfig() (Config, error) {
 	cfg = Config{
 		Log: LogConfig{
 			Level: "error",
-			File:  filepath.Join(cfgPath, "log"),
+			Dir:   filepath.Join(cfgPath, "logs"),
 		},
+		Plugins: make(map[string]map[string]string),
 	}
 
 	cfgPath, err = createConfigFile(cfgPath)
@@ -73,10 +76,9 @@ func LoadConfig() (Config, error) {
 		return cfg, err
 	}
 
-	var finalCfg Config
-	err = mergo.Merge(&finalCfg, loadedCfg, mergo.WithOverride)
+	err = mergo.Merge(&cfg, loadedCfg, mergo.WithOverride)
 
-	return finalCfg, err
+	return cfg, err
 }
 
 // Save the configuration to file

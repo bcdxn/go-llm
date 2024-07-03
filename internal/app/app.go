@@ -7,6 +7,7 @@ import (
 	"github.com/bcdxn/go-llm/internal/chat"
 	"github.com/bcdxn/go-llm/internal/modelselect"
 	"github.com/bcdxn/go-llm/internal/pluginselect"
+	"github.com/bcdxn/go-llm/internal/shared"
 	"github.com/hashicorp/go-hclog"
 	"github.com/urfave/cli/v2"
 )
@@ -27,7 +28,7 @@ func New() *cli.App {
 		Before: func(c *cli.Context) error {
 			level := c.String("loglevel")
 
-			l, err := llm.NewLogger("llm", hclog.LevelFromString(level))
+			l, err := shared.NewLogger("llm", hclog.LevelFromString(level))
 			if err != nil {
 				return err
 			}
@@ -38,24 +39,51 @@ func New() *cli.App {
 			}
 
 			c.Context = llm.SetConfigInContext(c.Context, cfg)
-			c.Context = llm.SetLoggerInContext(c.Context, *l)
+			c.Context = shared.SetLoggerInContext(c.Context, *l)
 
 			return nil
 		},
 		After: func(c *cli.Context) error {
-			l := llm.MustGetLoggerFromContext(c.Context, "")
+			l := shared.MustGetLoggerFromContext(c.Context, "")
 			l.Close()
 			return nil
 		},
-		Action: func(*cli.Context) error {
-			_, err := chat.Run()
+		Action: func(c *cli.Context) error {
+			_, err := chat.Run(c)
 			return err
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "plugins",
+				Name:  "plugin",
 				Usage: "Collection of plugin management commands",
+				OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
+					fmt.Println("you're doing it wrong")
+					// cli.HelpPrinter(os.Stdout, cli.AppHelpTemplate, c.App)
+					return nil
+				},
 				Subcommands: []*cli.Command{
+					{
+						Name:  "config",
+						Usage: "Plugin configuration related commands",
+						Subcommands: []*cli.Command{
+							{
+								Name:  "list",
+								Usage: "List your plugin configuration key/value pairs",
+								Action: func(c *cli.Context) error {
+									fmt.Println("Coming soon...")
+									return nil
+								},
+							},
+							{
+								Name:  "set",
+								Usage: "Set plugin configuration key/value pair",
+								Action: func(c *cli.Context) error {
+									fmt.Println("Coming soon...")
+									return nil
+								},
+							},
+						},
+					},
 					{
 						Name:  "list",
 						Usage: "List the installed plugins",
@@ -85,7 +113,7 @@ func New() *cli.App {
 				},
 			},
 			{
-				Name:  "models",
+				Name:  "model",
 				Usage: "Collection of model management commands",
 				Subcommands: []*cli.Command{
 					{
@@ -108,8 +136,8 @@ func New() *cli.App {
 			{
 				Name:  "chat",
 				Usage: "Start an interactive session with a model",
-				Action: func(*cli.Context) error {
-					_, err := chat.Run()
+				Action: func(c *cli.Context) error {
+					_, err := chat.Run(c)
 					return err
 				},
 			},

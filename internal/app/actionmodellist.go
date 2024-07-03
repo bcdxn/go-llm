@@ -15,7 +15,7 @@ import (
 func modelsList(ctx *cli.Context) error {
 	var (
 		cfg       = llm.MustGetConfigFromContext(ctx.Context)
-		l         = llm.MustGetLoggerFromContext(ctx.Context, "modelslist")
+		l         = shared.MustGetLoggerFromContext(ctx.Context, "modelslist")
 		pluginMap = map[string]plugin.Plugin{
 			"llm": &shared.LLMPlugin{},
 		}
@@ -45,7 +45,8 @@ func modelsList(ctx *cli.Context) error {
 
 	llm := raw.(shared.LLM)
 
-	ms := llm.GetModels()
+	selectedPlugin := cfg.DefaultPlugin.Name
+	ms := llm.GetModels(cfg.Plugins[selectedPlugin])
 	l.Debug("Successfully fetched models", "models", ms)
 
 	list := []string{}

@@ -11,7 +11,19 @@ import (
 
 type LLM interface {
 	GetPluginProtocolVersion() string
-	GetModels() []string
+	GetModels(cfg map[string]string) []string
+	SendMessages(p MessageParam) []Message
+}
+
+type MessageParam struct {
+	Config   map[string]string
+	Model    string
+	Messages []Message
+}
+
+type Message struct {
+	Role    string
+	Content string
 }
 
 /* LLMRPC
@@ -23,6 +35,7 @@ type LLMRPC struct {
 
 func (l *LLMRPC) GetPluginProtocolVersion() string {
 	var resp string
+
 	err := l.client.Call("Plugin.GetPluginProtocolVersion", new(interface{}), &resp)
 	if err != nil {
 		// TODO: return err
@@ -32,11 +45,23 @@ func (l *LLMRPC) GetPluginProtocolVersion() string {
 	return resp
 }
 
-func (l *LLMRPC) GetModels() []string {
+func (l *LLMRPC) GetModels(map[string]string) []string {
 	var resp []string
+
 	err := l.client.Call("Plugin.GetModels", new(interface{}), &resp)
 	if err != nil {
 		// TODO: return err
+		panic(err)
+	}
+
+	return resp
+}
+
+func (l *LLMRPC) SendMessages(p MessageParam) []Message {
+	var resp []Message
+
+	err := l.client.Call("Plugin.SendMessages", p, &resp)
+	if err != nil {
 		panic(err)
 	}
 
@@ -55,8 +80,13 @@ func (s *LLMRPCServer) GetPluginProtocolVersion(args interface{}, resp *string) 
 	return nil
 }
 
-func (s *LLMRPCServer) GetModels(args interface{}, resp *[]string) error {
-	*resp = s.Impl.GetModels()
+func (s *LLMRPCServer) GetModels(cfg map[string]string, resp *[]string) error {
+	*resp = s.Impl.GetModels(cfg)
+	return nil
+}
+
+func (s *LLMRPCServer) SendMessages(p MessageParam, resp *[]Message) error {
+	*resp = s.Impl.SendMessages(p)
 	return nil
 }
 

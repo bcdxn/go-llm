@@ -25,7 +25,7 @@ func Run(ctx *cli.Context) (tea.Model, error) {
 ------------------------------------------------------------------------------------------------- */
 
 type model struct {
-	l        llm.Logger
+	l        shared.Logger
 	width    int // window width
 	height   int // window height
 	list     list.Model
@@ -33,7 +33,7 @@ type model struct {
 	selected string
 }
 
-/* Component
+/* Component Behavior
 ------------------------------------------------------------------------------------------------- */
 
 func (m model) Init() tea.Cmd {
@@ -67,10 +67,10 @@ func (m model) View() string {
 
 func getInitialModel(c *cli.Context) model {
 	var (
-		l     = llm.MustGetLoggerFromContext(c.Context, "modelselect")
+		l     = shared.MustGetLoggerFromContext(c.Context, "modelselect")
+		cfg   = llm.MustGetConfigFromContext(c.Context)
 		d     = list.NewDefaultDelegate()
 		items = []list.Item{}
-		cfg   = llm.MustGetConfigFromContext(c.Context)
 	)
 	defer l.Close()
 
@@ -139,8 +139,9 @@ func fetchModelsHandler(m model) (model, tea.Cmd) {
 		os.Exit(1)
 	}
 
-	llm := raw.(shared.LLM)
-	ms := llm.GetModels()
+	llmp := raw.(shared.LLM)
+	selectedPlugin := m.cfg.DefaultPlugin.Name
+	ms := llmp.GetModels(m.cfg.Plugins[selectedPlugin])
 	m.l.Debug("successfully retrieved models", "models", ms)
 
 	models := []list.Item{}

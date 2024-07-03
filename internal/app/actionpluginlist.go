@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	llm "github.com/bcdxn/go-llm/internal"
 	"github.com/bcdxn/go-llm/internal/plugins"
+	"github.com/bcdxn/go-llm/internal/shared"
 	"github.com/bcdxn/go-llm/internal/styles"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v2"
@@ -17,14 +17,14 @@ var (
 )
 
 func pluginsList(c *cli.Context) error {
-	l := llm.MustGetLoggerFromContext(c.Context, "pluginslist")
+	l := shared.MustGetLoggerFromContext(c.Context, "pluginslist")
 
 	l.Debug("finding plugis")
 	ps, err := plugins.Find()
 	if err != nil {
 		return err
 	}
-	l.Debug("foud plugins", "plugins", ps)
+	l.Debug("found plugins", "plugins", ps)
 
 	fmt.Println(styles.Title.Render("Installed LLM Plugins:"))
 
